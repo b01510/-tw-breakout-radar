@@ -1,0 +1,9 @@
+{
+  "name": "tw-breakout-private",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-03",
+  "workers_dev": true,
+  "vars": {"ALLOWED_EMAIL":"a9040614@gmail.com"},
+  "assets": {"directory":"./site", "binding":"ASSETS", "run_worker_first":true},
+  "d1_databases": [{"binding":"RESULTS", "database_name":"tw-breakout-results", "database_id":"SET_AFTER_CREATING_DATABASE"}]
+}

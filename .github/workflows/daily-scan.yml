@@ -30,6 +30,14 @@ jobs:
         run: |
           python scan_daily.py
           python build_private.py
+      - name: 更新登入保護的 Cloudflare 網站
+        if: vars.CLOUDFLARE_SYNC_ENABLED == 'true'
+        env:
+          RADAR_URL: ${{ vars.RADAR_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          RADAR_UPDATE_SECRET: ${{ secrets.RADAR_UPDATE_SECRET }}
+        run: python cloudflare/upload.py
       - uses: actions/upload-artifact@v4
         with:
           name: private-stock-radar
