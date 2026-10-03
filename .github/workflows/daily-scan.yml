@@ -1,0 +1,45 @@
+name: 每日台股掃描與網站部署
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '30 8 * * 1-5'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: daily-scan-pages
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: data
+          key: daily-history-${{ github.run_id }}
+          restore-keys: daily-history-
+      - name: 掃描實際日線
+        if: github.event_name != 'push'
+        run: python scan_daily.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: static
+  deploy:
+    needs: scan
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 發佈手機網站
+        id: deployment
+        uses: actions/deploy-pages@v4
