@@ -1,4 +1,4 @@
-name: 每日私人台股掃描
+name: 每日台股掃描與網站部署
 on:
   push:
     branches: [main]
@@ -7,12 +7,14 @@ on:
     - cron: '30 8 * * 1-5'
 permissions:
   contents: read
+  pages: write
+  id-token: write
 concurrency:
-  group: private-daily-scan
+  group: daily-scan-pages
   cancel-in-progress: false
 jobs:
   scan:
-    if: github.event.repository.private == true
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -23,23 +25,22 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: data
-          key: private-history-${{ github.run_id }}
-          restore-keys: private-history-
+          key: daily-history-${{ github.run_id }}
+          restore-keys: daily-history-
       - run: python -m unittest discover -s tests -v
-      - name: 掃描並產生可離線開啟的私人報告
-        run: |
-          python scan_daily.py
-          python build_private.py
-      - name: 更新登入保護的 Cloudflare 網站
-        if: vars.CLOUDFLARE_SYNC_ENABLED == 'true'
-        env:
-          RADAR_URL: ${{ vars.RADAR_URL }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          RADAR_UPDATE_SECRET: ${{ secrets.RADAR_UPDATE_SECRET }}
-        run: python cloudflare/upload.py
-      - uses: actions/upload-artifact@v4
+      - name: 掃描實際日線
+        if: github.event_name != 'push'
+        run: python scan_daily.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: private-stock-radar
-          path: private-report/
-          retention-days: 7
+          path: static
+  deploy:
+    needs: scan
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
