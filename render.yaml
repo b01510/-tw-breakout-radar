@@ -1,0 +1,23 @@
+# This is a paid always-on configuration. Review current Render prices before applying.
+services:
+  - type: web
+    name: tw-breakout-private
+    runtime: docker
+    repo: https://github.com/b01510/-tw-breakout-radar
+    branch: main
+    plan: starter
+    region: singapore
+    healthCheckPath: /healthz
+    disk:
+      name: radar-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: APP_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: DATA_DIR
+        value: /app/data

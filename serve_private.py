@@ -2,9 +2,13 @@ import os, threading, time, urllib.parse
 from collections import deque
 from http.server import ThreadingHTTPServer
 import server
-from auth import COOKIE, TTL, valid_session, verify_password, issue_session
+from auth import COOKIE, TTL, valid_session, verify_password, issue_session, password_hash
 
 PASSWORD_HASH=os.environ.get('APP_PASSWORD_HASH','')
+_initial_password=os.environ.get('APP_PASSWORD','')
+if not PASSWORD_HASH and 12<=len(_initial_password)<=256:
+    PASSWORD_HASH=password_hash(_initial_password)
+_initial_password=None
 SESSION_SECRET=os.environ.get('SESSION_SECRET','')
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','1')=='1'
 ATTEMPTS=deque()
@@ -67,6 +71,6 @@ class PrivateHandler(server.Handler):
 
 if __name__=='__main__':
     if not PASSWORD_HASH.startswith('scrypt$') or len(SESSION_SECRET)<32:
-        raise SystemExit('拒絕啟動：需設定 APP_PASSWORD_HASH 與至少32字元的 SESSION_SECRET。')
+        raise SystemExit('拒絕啟動：需設定 APP_PASSWORD（12–256字元）或 APP_PASSWORD_HASH，以及至少32字元的 SESSION_SECRET。')
     threading.Thread(target=server.scheduler,daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0',int(os.environ.get('PORT','8080'))),PrivateHandler).serve_forever()
