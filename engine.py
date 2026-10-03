@@ -1,7 +1,7 @@
 """Causal daily-bar scanner: frozen platform and resistance, no future bars."""
 from statistics import mean
 
-VERSION = '2.0'
+VERSION = '2.1'
 DEFAULTS = dict(width=.18, gap=.005, volume=1.5, near=.10, monitor=20,
                 dry=.7, contraction=.8, convergence=.03, closePosition=.75)
 
@@ -64,30 +64,59 @@ def evaluate(bars, config=None):
             fullGap=b['low']>hi,gapBreakout=gap>c['gap'],setupConfirmed=setup,
             checks=[dict(label=n,points=w,passed=ok) for n,w,ok in checks])
     latest=bars[-1]
-    for i in range(max(124,len(bars)-int(c['monitor'])-1),len(bars)):
-        s=candidate(i)
-        if not s or not s['breakoutDate']: continue
-        after=bars[i+1:]
-        failed=next((b for b in after if b['close']<s['platformHigh']),None)
-        s.update(close=latest['close'],date=latest['date'],bars=bars[-70:],eligible=not bool(failed))
-        s['resistanceDistance']=s['resistance']/latest['close']-1
-        if failed:
-            s.update(status='疑似假突破',failedDate=failed['date'])
-        else:
-            confirmations=[]
-            for j in range(i,len(bars)):
-                b=bars[j]
-                ratio=b['volume']/max(1,mean(x['volume'] for x in bars[j-20:j]))
-                if b['close']>s['resistance'] and ratio>=c['volume']:
-                    confirmations.append(b['date'])
-            confirmed=bool(confirmations) and latest['close']>s['resistance']
-            if confirmed:
-                s.update(status='前高突破',resistanceBreakoutDate=confirmations[0])
-            elif after:
-                s['status']='前高確認中'
-        s['grade']='失效' if failed else ('A級' if s['status']=='前高突破' and s['score']>=80 else '觀察')
-        return s
-    s=candidate(len(bars)-1)
-    if s:
-        s.update(bars=bars[-70:],eligible=True,grade='預警',resistanceDistance=s['resistance']/latest['close']-1)
+    active=None
+    history=[]
+    start=124
+    activeIndex=None
+    for i in range(start,len(bars)):
+        b=bars[i]
+        if active and activeIndex is not None and i-activeIndex>int(c['monitor']):
+            history.append(dict(breakoutDate=active['breakoutDate'],platformHigh=active['platformHigh'],
+                                failedDate=active.get('failedDate'),status='疑似假突破' if active.get('failedDate') else '追蹤期滿'))
+            active=None
+        if active and not active.get('failedDate') and b['close']<active['platformHigh']:
+            active.update(failedDate=b['date'],eligible=False)
+        # Retain the live event; repeated high-volume candles do not move its platform.
+        if active and not active.get('failedDate'):
+            continue
+        new=candidate(i)
+        if not new or not new['breakoutDate']: continue
+        # A fresh close crossing is required after failure; a rebound already above
+        # resistance does not silently restore the old failed event.
+        if bars[i-1]['close']>new['platformHigh']: continue
+        if active:
+            history.append(dict(breakoutDate=active['breakoutDate'],
+                platformHigh=active['platformHigh'],failedDate=active.get('failedDate'),
+                status='疑似假突破'))
+        new.update(eligible=True,retry=bool(history and history[-1].get('failedDate')),eventId=b['date']+':'+str(round(new['platformHigh'],4)))
+        active=new
+        activeIndex=i
+    s=active
+    ready=candidate(len(bars)-1) if not active or active.get('failedDate') else None
+    if ready and not ready['breakoutDate']:
+        if active:
+            history.append(dict(breakoutDate=active['breakoutDate'],platformHigh=active['platformHigh'],
+                                failedDate=active.get('failedDate'),status='疑似假突破'))
+        s=ready
+    if not s: return None
+    s.update(close=latest['close'],date=latest['date'],bars=bars[-70:],eventHistory=history)
+    s['resistanceDistance']=s['resistance']/latest['close']-1
+    s['extension']=latest['close']/s['platformHigh']-1
+    if s.get('failedDate'):
+        s.update(status='疑似假突破',eligible=False,grade='失效')
+    elif not s['breakoutDate']:
+        s.update(status='準備突破',eligible=True,grade='預警')
+    else:
+        eventIndex=next(j for j in range(start,len(bars)) if bars[j]['date']==s['breakoutDate'])
+        confirmations=[]
+        for j in range(eventIndex,len(bars)):
+            b=bars[j]
+            ratio=b['volume']/max(1,mean(x['volume'] for x in bars[j-20:j]))
+            if b['close']>s['resistance'] and ratio>=c['volume']:
+                confirmations.append(b['date'])
+        confirmed=bool(confirmations) and latest['close']>s['resistance']
+        s['resistanceConfirmed']=confirmed
+        if confirmations: s['resistanceBreakoutDate']=confirmations[0]
+        s['status']='今日突破' if s['breakoutDate']==latest['date'] else ('前高突破' if confirmed else '前高確認中')
+        s['grade']='A級' if confirmed and s['score']>=80 else '觀察'
     return s

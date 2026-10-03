@@ -26,6 +26,8 @@ jobs:
           path: data
           key: daily-history-${{ github.run_id }}
           restore-keys: daily-history-
+      - name: 驗證獨立事件與無未來資料回放
+        run: python -m unittest discover -s tests -v
       - name: 掃描實際日線
         if: github.event_name != 'push'
         run: python scan_daily.py

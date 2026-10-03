@@ -1,0 +1,52 @@
+[
+  {
+    "date": "2026-09-07",
+    "status": "疑似假突破",
+    "breakoutDate": "2026-08-26",
+    "platformHigh": 21.149999618530273,
+    "volumeRatio": 2.583894033675202,
+    "retry": false,
+    "eventHistory": []
+  },
+  {
+    "date": "2026-09-08",
+    "status": "今日突破",
+    "breakoutDate": "2026-09-08",
+    "platformHigh": 22.149999618530273,
+    "volumeRatio": 4.736700519005233,
+    "retry": true,
+    "eventHistory": [
+      {
+        "breakoutDate": "2026-08-26",
+        "platformHigh": 21.149999618530273,
+        "failedDate": "2026-09-02",
+        "status": "疑似假突破"
+      }
+    ]
+  },
+  {
+    "date": "2026-09-09",
+    "status": "前高突破",
+    "breakoutDate": "2026-09-08",
+    "platformHigh": 22.149999618530273,
+    "volumeRatio": 4.736700519005233,
+    "retry": true,
+    "eventHistory": [
+      {
+        "breakoutDate": "2026-08-26",
+        "platformHigh": 21.149999618530273,
+        "failedDate": "2026-09-02",
+        "status": "疑似假突破"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-02",
+    "status": "前高突破",
+    "breakoutDate": "2026-09-08",
+    "platformHigh": 22.149999618530273,
+    "volumeRatio": 4.736700519005233,
+    "retry": false,
+    "eventHistory": []
+  }
+]
