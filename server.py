@@ -3,14 +3,14 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
-from engine import evaluate
+from engine import evaluate, DEFAULTS, VERSION
 
 ROOT=Path(__file__).parent
 DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
 TW=timezone(timedelta(hours=8))
 LOCK=threading.Lock()
 STATE={'running':False,'done':0,'total':0,'errors':[]}
-CONFIG={'width':.18,'gap':.005,'volume':1.5,'near':.05,'monitor':20}
+CONFIG=DEFAULTS.copy()
 def read(name, fallback):
     try: return json.loads((DATA/name).read_text())
     except (FileNotFoundError,json.JSONDecodeError): return fallback
@@ -84,7 +84,7 @@ def scan():
                 except Exception as e: STATE['errors'].append(dict(code=stock['code'],message=str(e)[:180]))
                 STATE['done']+=1
         if not successful: raise RuntimeError('全部歷史行情讀取失敗；保留上次結果')
-        result=dict(updatedAt=datetime.now(TW).isoformat(),date=max(dates),oldestDate=min(dates),
+        result=dict(strategyVersion=VERSION,updatedAt=datetime.now(TW).isoformat(),date=max(dates),oldestDate=min(dates),
                     incomplete=successful<len(stocks) or bool(STATE['errors']),
                     coverage=successful,total=len(stocks),errors=STATE['errors'],config=config,
                     source='TWSE / TPEx 股票名單；Yahoo Finance 日線（非即時）',

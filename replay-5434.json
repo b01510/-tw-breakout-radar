@@ -1,0 +1,23 @@
+{
+  "symbol": "5434.TW",
+  "source": "Yahoo Finance 日線",
+  "events": [
+    {
+      "date": "2026-08-14",
+      "close": 521.0,
+      "signal": null,
+      "platform": null,
+      "resistance": null
+    },
+    {
+      "date": "2026-10-02",
+      "close": 583.0,
+      "signal": [
+        "今日突破",
+        "2026-10-02"
+      ],
+      "platform": 567.0,
+      "resistance": 602.0
+    }
+  ]
+}
