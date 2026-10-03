@@ -6,7 +6,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from engine import evaluate, DEFAULTS, VERSION
 
 ROOT=Path(__file__).parent
-DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
+DATA=Path(os.environ.get('DATA_DIR',str(ROOT/'data'))); DATA.mkdir(parents=True,exist_ok=True)
 TW=timezone(timedelta(hours=8))
 LOCK=threading.Lock()
 STATE={'running':False,'done':0,'total':0,'errors':[]}
