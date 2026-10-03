@@ -1,0 +1,25 @@
+name: 撤下公開網站內容
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: close-public-pages
+  cancel-in-progress: false
+jobs:
+  close:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: privacy-lock
+      - uses: actions/deploy-pages@v4
